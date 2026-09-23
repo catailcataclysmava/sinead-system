@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sinead's System (Player)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  color-scheme: dark;
+  --void:#04060b;
+  --room:#141a24;
+  --panel:rgba(6,14,30,.55);
+  --panel-solid:#08101d;
+  --line:#3fb8ff;
+  --line-dim:rgba(63,184,255,.28);
+  --glow:rgba(63,184,255,.45);
+  --text:#e6f2ff;
+  --muted:#7f98b6;
+  --faint:#4a5f78;
+  --xp:#5cf28a;
+  --hp:#e5485c;
+  --mp:#3d7bff;
+  --st:#3ee07a;
+  --xpbar:#eef3f8;
+  --poor:#9aa3ad;
+  --common:#eef3f8;
+  --uncommon:#4fd66b;
+  --rare:#3f8cff;
+  --epic:#b067ff;
+  --legendary:#ff9d2e;
+  --mythic:#ff4d5e;
+  --display:"Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --body:"Barlow", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--void);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.45;
+  padding-inline:16px;padding-block:20px 40px;
+  background:
+    radial-gradient(1200px 600px at 70% -10%, #1b2533 0%, transparent 60%),
+    radial-gradient(900px 500px at 10% 110%, #111826 0%, transparent 60%),
+    var(--void);
+}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--line);outline-offset:2px}
+.wrap{max-width:980px;margin:0 auto;display:grid;gap:14px}
+
+/* GM controls (outside the fiction) */
+.gm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-family:var(--display);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.gm strong{color:var(--text);font-weight:600;margin-right:4px}
+.gm button{background:transparent;border:1px solid var(--faint);padding:6px 10px;cursor:pointer;text-transform:uppercase;letter-spacing:.06em}
+.gm button:hover{border-color:var(--line);color:var(--text)}
+
+/* Stage: her view of the room */
+.stage{position:relative;min-height:640px;border:1px solid #1a2230;overflow:hidden;
+  background:
+    linear-gradient(180deg, rgba(4,6,11,.2), rgba(4,6,11,.75)),
+    repeating-linear-gradient(90deg, #121925 0 120px, #0f1520 120px 124px),
+    var(--room);}
+.stage-label{position:absolute;left:14px;top:10px;font-family:var(--mono);font-size:11px;color:var(--faint)}
+
+/* The System window */
+.win{position:absolute;inset:36px 28px 28px;margin:auto;max-width:860px;display:flex;flex-direction:column;
+  background:var(--panel);border:1.5px solid var(--line);
+  box-shadow:0 0 0 1px rgba(63,184,255,.15) inset, 0 0 28px var(--glow);
+  transition:all .45s cubic-bezier(.2,.8,.2,1);transform-origin:bottom left;overflow:hidden}
+.win.minimised{inset:auto auto 18px 18px;width:230px;height:130px;opacity:.55;cursor:pointer}
+.win.minimised .win-inner{pointer-events:none}
+.lights{position:absolute;inset:0;pointer-events:none;overflow:hidden;background:radial-gradient(120% 90% at 50% 110%, #0a2a5c 0%, #061530 45%, #030a18 100%)}
+.lights canvas{position:absolute;display:block}
+#bg-grid{left:-30%;top:-10%;transform:perspective(700px) rotateX(38deg);transform-origin:50% 100%;opacity:.9;
+  -webkit-mask-image:linear-gradient(to bottom, transparent 0%, #000 45%);mask-image:linear-gradient(to bottom, transparent 0%, #000 45%)}
+#bg-fx{left:0;top:0}
+@media (prefers-reduced-motion:reduce){.win{transition:none}}
+.win-inner{position:relative;display:flex;flex-direction:column;min-height:0;height:100%}
+
+.topbar{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line-dim)}
+.crumb{font-family:var(--display);font-weight:600;letter-spacing:.14em;text-transform:uppercase;font-size:13px;flex:1;display:flex;align-items:center;gap:10px}
+.back{background:none;border:1px solid var(--line-dim);padding:3px 9px;cursor:pointer;font-family:var(--display);font-size:12px;letter-spacing:.1em}
+.back:hover{border-color:var(--line)}
+.clock{font-family:var(--mono);font-size:13px;color:var(--text)}
+.mailbtn{background:none;border:none;cursor:pointer;position:relative;padding:2px;display:grid;place-items:center}
+.mailbtn svg{width:20px;height:20px;stroke:var(--line);fill:none;stroke-width:1.6}
+.mailbtn .dot{position:absolute;right:-2px;top:-1px;width:7px;height:7px;background:var(--xp);border-radius:50%}
+
+.body{flex:1;min-height:0;overflow:auto;padding:18px}
+.screen[hidden]{display:none}
+
+/* Main menu */
+.menu{display:grid;grid-template-columns:200px 1fr;gap:24px;align-items:center;min-height:100%}
+.vitals{display:grid;gap:14px}
+.vbar{display:flex;align-items:center;gap:8px}
+.vbar .track{flex:1;height:10px;border:1px solid var(--line-dim);background:rgba(255,255,255,.03)}
+.vbar .fill{height:100%}
+.vbar svg{width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:1.5;flex:none}
+.vnote{font-size:12px;color:var(--faint);font-family:var(--mono)}
+.options{display:grid;gap:10px;justify-items:center}
+.opt{width:min(320px,100%);background:rgba(63,184,255,.05);border:1px solid var(--line-dim);padding:12px 16px;cursor:pointer;font-family:var(--display);font-size:17px;letter-spacing:.12em;text-transform:uppercase;text-align:center;transition:background .2s,border-color .2s}
+.opt:hover{background:rgba(63,184,255,.14);border-color:var(--line)}
+.opt .new{font-size:10px;color:var(--void);background:var(--xp);padding:1px 5px;margin-left:8px;vertical-align:middle;letter-spacing:.08em}
+
+/* Shared bits */
+h3{font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:600}
+.sect{margin-bottom:22px}
+.rar{font-family:var(--display);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.r-poor{color:var(--poor)}.r-common{color:var(--common)}.r-uncommon{color:var(--uncommon)}.r-rare{color:var(--rare)}.r-epic{color:var(--epic)}.r-legendary{color:var(--legendary)}.r-mythic{color:var(--mythic)}
+.tag{display:inline-block;font-family:var(--mono);font-size:12px;border:1px solid var(--line-dim);padding:1px 7px;margin:2px 4px 2px 0}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* Status */
+.bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px}
+.bar label{display:flex;justify-content:space-between;font-family:var(--display);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
+.bar .track{height:12px;border:1px solid var(--line-dim);background:rgba(255,255,255,.03)}
+.bar .fill{height:100%}
+.status-grid{display:grid;grid-template-columns:170px 1fr;gap:22px}
+.figure{border:1px solid var(--line-dim);padding:10px;display:grid;place-items:center;align-self:start}
+.figure svg{width:100%;max-width:140px;height:auto}
+.effects{display:grid;gap:6px}
+.effect{border-left:2px solid var(--xp);padding:4px 10px;background:rgba(92,242,138,.05);position:relative;cursor:help}
+.effect .tip{display:none;position:absolute;left:10px;top:100%;z-index:5;background:var(--panel-solid);border:1px solid var(--line);padding:6px 10px;font-size:13px;white-space:nowrap}
+.effect:hover .tip,.effect:focus .tip{display:block}
+.heading{display:grid;grid-template-columns:minmax(120px,1fr) 88px minmax(120px,1.6fr) 96px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(63,184,255,.1)}
+.heading .track{height:6px;background:rgba(255,255,255,.05)}
+.heading .fill{height:100%;background:var(--xpbar)}
+.heading .num{font-size:12px;color:var(--muted);text-align:right}
+.reveal{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.reveal input{background:rgba(255,255,255,.03);border:1px solid var(--line-dim);color:var(--text);padding:6px 10px;font:inherit;min-width:0;flex:1 1 180px}
+.reveal button,.btn{background:rgba(63,184,255,.08);border:1px solid var(--line-dim);padding:6px 12px;cursor:pointer;font-family:var(--display);letter-spacing:.1em;text-transform:uppercase;font-size:12px}
+.reveal button:hover,.btn:hover{border-color:var(--line)}
+.revealed{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+
+/* Skills */
+.skill{border:1px solid var(--line-dim);padding:10px 12px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:6px 14px;background:rgba(255,255,255,.015)}
+.skill.off{opacity:.45}
+.skill .name{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.03em}
+.skill .desc{grid-column:1/-1;color:#c9d9ec;font-size:14px}
+.skill .meta{grid-column:1/-1;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.controls{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+.toggle{width:40px;height:20px;border:1px solid var(--line-dim);background:rgba(255,255,255,.04);position:relative;cursor:pointer;padding:0}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;background:var(--muted);transition:left .2s,background .2s}
+.toggle[aria-pressed="true"]{border-color:var(--line)}
+.toggle[aria-pressed="true"]::after{left:22px;background:var(--line)}
+.upg{border:1px solid var(--xp);color:var(--xp);background:rgba(92,242,138,.07);padding:3px 9px;cursor:pointer;font-family:var(--display);font-size:11px;letter-spacing:.12em;text-transform:uppercase;animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 rgba(92,242,138,0)}50%{box-shadow:0 0 10px rgba(92,242,138,.45)}}
+@media (prefers-reduced-motion:reduce){.upg{animation:none}}
+
+/* Inventory */
+.inv-grid{display:grid;grid-template-columns:220px 1fr;gap:22px}
+.slots{display:grid;gap:6px;margin-top:10px}
+.slot{display:flex;justify-content:space-between;gap:8px;font-size:13px;border-bottom:1px dashed rgba(63,184,255,.15);padding:3px 0}
+.slot span:first-child{color:var(--muted);font-family:var(--display);letter-spacing:.08em;text-transform:uppercase;font-size:11px}
+.item{border:1px solid var(--line-dim);padding:8px 12px;margin-bottom:6px;cursor:pointer;background:rgba(255,255,255,.015)}
+.item:hover{border-color:var(--line)}
+.item .sub{font-size:13px;color:var(--muted)}
+.cap{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:12px}
+
+/* Friends */
+.friend{display:flex;gap:12px;align-items:center;border:1px solid var(--line-dim);padding:10px;cursor:pointer;max-width:420px}
+.friend:hover{border-color:var(--line)}
+.avatar{width:44px;height:44px;border:1px solid var(--line-dim);display:grid;place-items:center;background:linear-gradient(160deg,#1d3d7a,#0c1a33);font-family:var(--display);font-weight:700}
+.online{width:9px;height:9px;border-radius:50%;background:var(--xp);box-shadow:0 0 6px var(--xp)}
+.ctx{margin-top:8px;max-width:420px;border:1px solid var(--line);padding:10px;font-size:13px;color:var(--muted)}
+
+/* Achievements */
+.ach-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ach{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:start;border-bottom:1px solid rgba(63,184,255,.1);padding:9px 0}
+.ach .ico{width:34px;height:34px;border:1px solid var(--legendary);display:grid;place-items:center;color:var(--legendary);font-family:var(--display);font-weight:700}
+.ach.locked .ico{border-color:var(--faint);color:var(--faint)}
+.ach .t{font-family:var(--display);font-weight:600}
+.ach .d{font-size:13px;color:var(--muted)}
+.ach .when{font-family:var(--mono);font-size:11px;color:var(--faint);white-space:nowrap}
+.ach.locked .t{color:var(--faint)}
+
+/* Mail */
+.mail{border:1px solid var(--line-dim);padding:10px 12px;cursor:pointer}
+.mail:hover{border-color:var(--line)}
+.mail .from{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.mail-body{margin-top:10px;border:1px solid var(--line-dim);padding:12px;font-size:14px;white-space:pre-wrap;font-family:var(--body)}
+
+/* Popups, floaters, toasts */
+.popup{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:20;width:min(460px,calc(100% - 32px));max-height:calc(100% - 40px);overflow:auto;
+  background:var(--panel-solid);border:1.5px solid var(--line);box-shadow:0 0 30px var(--glow);padding:16px 18px 12px}
+.popup .ptext{font-family:var(--display);font-size:16px;line-height:1.5;white-space:pre-wrap}
+.popup .pactions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.arrow{background:none;border:none;cursor:pointer;padding:0;width:28px;height:22px}
+.arrow svg{stroke:var(--text);fill:var(--text)}
+.toasts{position:absolute;left:14px;bottom:14px;display:grid;gap:6px;z-index:25;max-width:calc(100% - 28px)}
+.toast{background:var(--panel-solid);border:1px solid var(--line);padding:6px 10px;font-family:var(--display);font-size:13px;box-shadow:0 0 12px var(--glow)}
+.floater{position:absolute;z-index:30;font-family:var(--mono);font-weight:600;color:var(--xp);text-shadow:0 0 8px rgba(92,242,138,.7);pointer-events:none;animation:float 2.2s ease-out forwards}
+@keyframes float{from{opacity:0;transform:translateY(0)}15%{opacity:1}to{opacity:0;transform:translateY(-60px)}}
+.note{font-size:12px;color:var(--faint);font-family:var(--mono)}
+
+@media (max-width:720px){
+  .stage{min-height:760px}
+  .win{inset:30px 10px 12px}
+  .menu,.status-grid,.inv-grid{grid-template-columns:1fr}
+  .heading{grid-template-columns:1fr 80px;}
+  .heading .track{grid-column:1/-1}
+  .heading .num{grid-column:1/-1;text-align:left}
+}
+
+/* Glossary (out-of-fiction reference) */
+.gloss-wrap{position:fixed;inset:0;z-index:100;background:rgba(2,4,9,.72);display:grid;place-items:center;padding:16px}
+.gloss-wrap[hidden]{display:none}
+.gloss{width:min(760px,100%);max-height:calc(100vh - 32px);overflow:auto;background:#0b1320;border:1px solid var(--faint);padding:20px 22px;color:var(--text)}
+.gloss header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.gloss h2{font-family:var(--display);font-size:18px;letter-spacing:.14em;text-transform:uppercase;margin:0}
+.gloss h4{font-family:var(--display);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--line);margin:22px 0 8px}
+.gloss dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0}
+.gloss dt{font-family:var(--display);font-weight:600}
+.gloss dd{margin:0;color:#c9d9ec}
+.gloss p,.gloss li{color:#c9d9ec;font-size:14px}
+.gloss ul{padding-left:18px;margin:8px 0}
+.gloss .tbl{overflow-x:auto}
+.gloss table{border-collapse:collapse;width:100%;font-size:14px}
+.gloss th,.gloss td{text-align:left;padding:6px 10px;border-bottom:1px solid rgba(63,184,255,.14);vertical-align:top}
+.gloss th{font-family:var(--display);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.gloss td:first-child{font-family:var(--display);font-weight:600;white-space:nowrap}
+.gloss .add{font-size:11px;color:var(--xp);font-family:var(--mono);margin-left:6px}
+.gloss .close{background:transparent;border:1px solid var(--faint);padding:5px 12px;cursor:pointer;font-family:var(--display);letter-spacing:.1em;text-transform:uppercase;font-size:12px}
+.gloss .close:hover{border-color:var(--line)}
+@media (max-width:520px){.gloss dl{grid-template-columns:1fr}.gloss dd{margin-bottom:6px}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="gm" aria-label="Mockup controls">
+    <strong>Mockup</strong>
+    <button id="gm-gloss">Glossary</button>
+    <button id="gm-patch">Show v1.01 patch notes</button>
+    <button id="gm-focus">Look away (window drifts)</button>
+    <button id="gm-reset">Reset</button>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="stage-label">Sinead's view · Julia's apartment · Day 2, evening</div>
+
+    <section class="win" id="win" aria-label="System window">
+      <div class="lights" aria-hidden="true"><canvas id="bg-grid"></canvas><canvas id="bg-fx"></canvas></div>
+      <div class="win-inner">
+        <header class="topbar">
+          <div class="crumb"><button class="back" id="back" hidden>&larr; Back</button><span id="crumb">Main Menu</span></div>
+          <span class="clock num" id="clock">--:--</span>
+          <button class="mailbtn" id="mailbtn" aria-label="Mail">
+            <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12"/><path d="M3 7l9 6 9-6"/></svg>
+            <span class="dot" aria-hidden="true"></span>
+          </button>
+        </header>
+
+        <div class="body">
+          <!-- MAIN MENU -->
+          <div class="screen" data-screen="menu">
+            <div class="menu">
+              <div class="vitals">
+                <div class="vbar">
+                  <svg viewBox="0 0 24 24" aria-label="Bed icon"><path d="M3 18V8M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="1.6"/></svg>
+                  <div class="track"><div class="fill" style="width:100%;background:var(--hp)"></div></div>
+                </div>
+                <div class="vbar">
+                  <span style="width:18px;flex:none"></span>
+                  <div class="track"><div class="fill" style="width:100%;background:var(--mp)"></div></div>
+                </div>
+                <div class="vbar">
+                  <span style="width:18px;flex:none"></span>
+                  <div class="track"><div class="fill" style="width:100%;background:var(--st)"></div></div>
+                </div>
+                <div class="vnote">red / blue bars: meaning unconfirmed<br>green: Stamina</div>
+              </div>
+              <nav class="options" aria-label="Main menu">
+                <button class="opt" data-go="inventory">Inventory</button>
+                <button class="opt" data-go="skills">Skills</button>
+                <button class="opt" data-go="status">Status</button>
+                <button class="opt" data-go="friends">Friends</button>
+                <button class="opt" data-go="achievements" id="opt-ach">Achievements<span class="new">NEW</span></button>
+              </nav>
+            </div>
+          </div>
+
+          <!-- STATUS -->
+          <div class="screen" data-screen="status" hidden>
+            <div class="bars">
+              <div class="bar"><label><span>HP</span><span class="num">100 / 100</span></label><div class="track"><div class="fill" style="width:100%;background:var(--hp)"></div></div></div>
+              <div class="bar"><label><span>MP</span><span class="num">100 / 100</span></label><div class="track"><div class="fill" style="width:100%;background:var(--mp)"></div></div></div>
+              <div class="bar"><label><span>Stamina</span><span class="num">100 / 100</span></label><div class="track"><div class="fill" style="width:100%;background:var(--st)"></div></div></div>
+              <div class="bar"><label><span>LV 3 &middot; XP</span><span class="num" id="lvxp">46 / 1,000</span></label><div class="track"><div class="fill" id="lvfill" style="width:4.6%;background:var(--xpbar)"></div></div></div>
+            </div>
+            <div class="status-grid">
+              <div class="figure" aria-label="Body figure">
+                <svg viewBox="0 0 100 200" fill="none" stroke="#3fb8ff" stroke-width="1.6">
+                  <circle cx="50" cy="22" r="13"/>
+                  <path d="M50 35v70M50 48l-26 32M50 48l26 32M50 105l-18 70M50 105l18 70"/>
+                </svg>
+              </div>
+              <div>
+                <div class="sect">
+                  <h3>Status effects</h3>
+                  <div class="effects">
+                    <div class="effect" tabindex="0">[Fully rested: Granted by Julia's couch]<span class="tip">[well rested: small bonus to XP gain]</span></div>
+                  </div>
+                </div>
+                <div class="sect">
+                  <h3>Defense</h3>
+                  <div>General &mdash; <span class="rar r-common">Common</span></div>
+                </div>
+                <div class="sect">
+                  <h3>Skills</h3>
+                  <div id="headings"></div>
+                </div>
+                <div class="sect">
+                  <h3>Basic skills &middot; hidden</h3>
+                  <div class="note">Most basic skills are hidden. Focus on one to force it into view.</div>
+                  <form class="reveal" id="reveal">
+                    <label class="note" for="reveal-in" hidden>Basic skill name</label>
+                    <input id="reveal-in" placeholder="Type a basic skill to focus on" autocomplete="off">
+                    <button type="submit">Focus</button>
+                  </form>
+                  <div class="revealed" id="revealed"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SKILLS -->
+          <div class="screen" data-screen="skills" hidden>
+            <div id="skills"></div>
+          </div>
+
+          <!-- INVENTORY -->
+          <div class="screen" data-screen="inventory" hidden>
+            <div class="cap"><span>Slots <span class="num">3 / 20</span></span><span>Weight: well within limit</span><span>Set: [everyday wear] &middot; no set bonus</span></div>
+            <div class="inv-grid">
+              <div>
+                <div class="figure">
+                  <svg viewBox="0 0 100 200" fill="none" stroke="#3fb8ff" stroke-width="1.6">
+                    <circle cx="50" cy="22" r="13"/>
+                    <path d="M50 35v70M50 48l-26 32M50 48l26 32M50 105l-18 70M50 105l18 70"/>
+                    <rect x="36" y="46" width="28" height="30" stroke-dasharray="3 3"/>
+                    <rect x="38" y="104" width="24" height="40" stroke-dasharray="3 3"/>
+                    <rect x="26" y="172" width="16" height="8" stroke-dasharray="3 3"/><rect x="58" y="172" width="16" height="8" stroke-dasharray="3 3"/>
+                  </svg>
+                </div>
+                <div class="slots">
+                  <div class="slot"><span>Coat</span><span>Wool coat</span></div>
+                  <div class="slot"><span>Top</span><span>Casual shirt</span></div>
+                  <div class="slot"><span>Legs</span><span>Jeans</span></div>
+                  <div class="slot"><span>Feet</span><span>Trainers</span></div>
+                </div>
+              </div>
+              <div>
+                <h3>Items</h3>
+                <div id="items"></div>
+                <div class="note">Example contents. Stored items are frozen in time.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- FRIENDS -->
+          <div class="screen" data-screen="friends" hidden>
+            <div class="friend" id="friend-mg" tabindex="0">
+              <div class="avatar">MG</div>
+              <div style="flex:1"><div style="font-family:var(--display);font-weight:600">Mechagirl</div><div class="note">Contact</div></div>
+              <span class="online" title="Online"></span>
+            </div>
+            <div class="ctx" id="ctx" hidden>No actions available.</div>
+          </div>
+
+          <!-- ACHIEVEMENTS -->
+          <div class="screen" data-screen="achievements" hidden>
+            <div class="ach-head"><h3>Achievements</h3><span class="num note">6 / ??</span></div>
+            <div id="achs"></div>
+            <div class="sect" style="margin-top:20px">
+              <h3>Titles &middot; slot 1: empty</h3>
+              <div id="titles"></div>
+            </div>
+          </div>
+
+          <!-- MAIL -->
+          <div class="screen" data-screen="mail" hidden>
+            <div class="mail" id="mail1" tabindex="0">
+              <div class="from">System &middot; unread</div>
+              <div style="font-family:var(--display);font-weight:600">[System Update v1.01: Patch Notes]</div>
+            </div>
+            <div class="mail-body" id="mailbody" hidden></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="toasts" id="toasts" aria-live="polite"></div>
+  </div>
+</div>
+
+
+<div class="gloss-wrap" id="gloss" hidden>
+  <div class="gloss" role="dialog" aria-modal="true" aria-labelledby="gloss-title">
+    <header><h2 id="gloss-title">Glossary</h2><button class="close" id="gloss-close">Close</button></header>
+    <dl>
+      <dt>Metahuman</dt><dd>A person with powers.</dd>
+      <dt>Chimera</dt><dd>A person with superpowers whose body was altered as a result.</dd>
+      <dt>Trigger event</dt><dd>The event that gave someone their powers.</dd>
+      <dt>P.A.R.A.G.O.N.</dt><dd>Powered Anomaly Response And Government Oversight Network.</dd>
+      <dt>P.A.T.H.</dt><dd>Powered Adaptation Training and Handling.</dd>
+    </dl>
+    <h4>PATH classifications</h4>
+    <div class="tbl"><table><thead><tr><th>Classification</th><th>Meaning</th></tr></thead><tbody><tr><td>Mover</td><td>An ability that grants a cape enhanced speed or mobility.</td></tr><tr><td>Shaker</td><td>An ability with an area of effect.</td></tr><tr><td>Brute</td><td>An ability that grants a cape enhanced strength or durability.</td></tr><tr><td>Breaker</td><td>An ability that allows a cape to shift into another state.</td></tr><tr><td>Master</td><td>An ability that allows a cape to control others or create minions.</td></tr><tr><td>Tinker</td><td>An ability that allows a cape to create or alter devices with futuristic technology.</td></tr><tr><td>Blaster</td><td>A long-ranged, offensive ability.</td></tr><tr><td>Thinker</td><td>An ability that focuses on information gathering.</td></tr><tr><td>Striker</td><td>A melee/touch-based ability.</td></tr><tr><td>Changer</td><td>An ability that allows a cape to alter their form or appearance.</td></tr><tr><td>Trump</td><td>An ability that allows a cape to manipulate powers in some capacity.</td></tr><tr><td>Stranger</td><td>An ability that focuses on stealth and/or infiltration.</td></tr><tr><td>Mender<span class=add>PARAGON</span></td><td>An ability that heals, restores or removes ailments from others.</td></tr><tr><td>Enabler<span class=add>PARAGON</span></td><td>An ability that strengthens, supports or coordinates others: buffs, shared senses, boosted performance.</td></tr></tbody></table></div>
+    <h4>PARAGON additions</h4>
+    <p>The chart began as a threat-response tool, so it sorted powers by how dangerous they are and how they're delivered. Support powers used to be filed under whatever fit their delivery (a touch healer became a Striker). PARAGON added Mender and Enabler so support capes are rated for what they actually do.</p>
+    <ul>
+      <li><strong>Mender vs Enabler:</strong> a Mender fixes what's wrong (injuries, illness, exhaustion). An Enabler makes people better than their baseline.</li>
+      <li><strong>Enabler vs Trump:</strong> an Enabler boosts people. A Trump acts on powers themselves: granting, removing, copying or altering them.</li>
+    </ul>
+    <h4>Ratings</h4>
+    <p>Every classification carries a rating from 1 to 10 for how effective that aspect of the power is, e.g. Brute 7 or Thinker 2 / Trump 1. Conditional powers can be given as a range (Brute 2–6).</p>
+    <div class="tbl"><table><thead><tr><th>Rating</th><th>Meaning</th><th>Typical response</th></tr></thead><tbody>
+      <tr><td>1–2</td><td>Minor. Barely beyond a trained human.</td><td>Standard procedure</td></tr>
+      <tr><td>3–4</td><td>Notable. Useful in a fight, dangerous if misused.</td><td>Engage with care</td></tr>
+      <tr><td>5–6</td><td>Serious. Can change the outcome of an incident on its own.</td><td>Team response</td></tr>
+      <tr><td>7–8</td><td>Major. Regional heavy hitter.</td><td>Class-A involvement</td></tr>
+      <tr><td>9–10</td><td>Extreme. City-level or worse.</td><td>Multiple Class-A teams; evacuation</td></tr>
+    </tbody></table></div>
+    <ul>
+      <li><strong>Hero classes and ratings are separate:</strong> a hero's Class (A, B, C) ranks the hero or team; the rating describes the power. Class-C capes usually top out at 2–4, Class-B at 4–6 and Class-A at 6–8.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const PATCH = `[System Update v1.01: Patch Notes]
+[Thank you for playing! Here's what's new.]
+
+DISPLAY
+• Stat display converted to the Rarity system: Poor · Common · Uncommon · Rare · Epic · Legendary · Mythic
+• [Defense: general: 0] now displays as [Defense: General — Common].
+• "Hidden stats" renamed to Basic Skills. Most are hidden because they are unremarkable.
+• [hidden stat forcefully shown] is now [hidden skill forcefully shown].
+• Skill descriptions expanded. Focus on a skill for details.
+
+PROGRESSION
+• XP values rebalanced. All progress has been recalculated. Higher tiers have longer bars.
+• Levels measure experience, not power. Skills are power.
+• Level-up rewards will always be new skills.
+• NEW: [Upgrade] option on the Skills screen. When a skill's heading catches up to it, upgrade it whenever you like. Upgrades are free.
+
+NEW FEATURES
+• [Achievements] tab added to the main menu. Achievements earned before this update have been awarded retroactively.
+• Titles unlocked. Equip them from the Achievements tab.
+• Mail is now active.
+• Friends: context menu options unlock as you get closer to people.`;
+
+const TIERS = ["poor","common","uncommon","rare","epic","legendary","mythic"];
+const cap = s => s[0].toUpperCase()+s.slice(1);
+
+const HEADINGS = [
+  {name:"Cooking",tier:"uncommon",xp:75,bar:5000},
+  {name:"Repair",tier:"common",xp:40,bar:1500},
+  {name:"Dodging",tier:"common",xp:45,bar:1500},
+  {name:"Impact Resistance",tier:"common",xp:13,bar:1500},
+  {name:"Stamina",tier:"poor",xp:180,bar:400},
+];
+const HIDDEN = {sight:"common"};
+
+const SKILLS = [
+  {group:"Passive (toggleable)",name:"Cooking",tier:"common",type:"Toggle",toggle:true,on:false,heading:"Cooking",
+   desc:"When using this skill, preparing a meal takes half as long and only uses half the ingredients.",
+   meta:"While ON, Cooking XP is reduced.",up:{to:"uncommon"}},
+  {group:"Passive (toggleable)",name:"Fitness",tier:"common",type:"Toggle",toggle:true,on:true,heading:"Stamina",
+   desc:"Stamina depletes half as fast.",meta:"While ON, Stamina XP is reduced."},
+  {group:"Passive (toggleable)",name:"Enhanced Reflexes",tier:"common",type:"Passive",heading:"Dodging",
+   desc:"When attempting to dodge an incoming attack you're aware of, perceive time 50% slower, for up to 1 second.",
+   meta:"Cost: 2 Stamina per trigger.",up:{to:"uncommon"}},
+  {group:"Passive (toggleable)",name:"Active Recovery",tier:"common",type:"Passive",heading:"Impact Resistance",
+   desc:"When knocked down by a hit no more than one tier above your Defense (Impact), roll and recover to your feet rather than being knocked prone.",
+   meta:"Cost: 5 Stamina.",up:{to:"uncommon"}},
+  {group:"Passive (toggleable)",name:"Stamina",tier:"uncommon",type:"Passive",heading:"Stamina",
+   desc:"You now have a stamina bar. It recovers over time. Any action that would reasonably exhaust you consumes stamina before affecting your body.",
+   meta:"Second Wind: once per day, recover 30% when Stamina hits 0."},
+  {group:"Passive (toggleable)",name:"Unrealistic Dodge",tier:"uncommon",type:"Passive",heading:"Dodging",
+   desc:"By timing a dodge perfectly before it hits you, you can dodge even unavoidable attacks by phasing through the attack entirely.",
+   meta:"Cost: 15 Stamina · Perfect Dodge refunds 5."},
+  {group:"Active",name:"Identify",tier:"common",type:"Active",heading:"Sight",
+   desc:"Learn some info about a target.",meta:"Cast: 1 second of focus.",up:{to:"uncommon"}},
+  {group:"Active",name:"Quicken",tier:"common",type:"Active",heading:"Stamina",
+   desc:"The next single action you take after activating this skill completes in half the time! 1 hr cool down.",meta:"Cost: 10 Stamina."},
+];
+
+const ITEMS = [
+  {name:"[Phone]",sub:"A smartphone. Still on its first week."},
+  {name:"[Mug (Empty)]",sub:"A mug from Julia's kitchen. Previously contained coffee."},
+  {name:"[Takeout Receipt]",sub:"Peppered chicken fillet, beef lo mein."},
+];
+
+const ACHS = [
+  {t:"Tutorial Complete",d:"Reach Level 1.",w:"Day 1"},
+  {t:"Crying in the Club",d:"Trigger while crying in a meeting.",w:"Day 1"},
+  {t:"Collateral Damage",d:"Survive a cape fight as a bystander.",w:"Day 1"},
+  {t:"Cardio Is a Status Effect",d:"Finish a mile in over 30 minutes.",w:"Day 2"},
+  {t:"Tenderised",d:"Get knocked down 50 times in one session.",w:"Day 2"},
+  {t:"Chef's Kiss",d:"Unlock your first crafting skill.",w:"Day 1"},
+  {t:"???",d:"Some doors are better left closed.",locked:true},
+  {t:"???",d:"Hidden",locked:true},
+];
+const TITLES = [
+  {t:"Punching Bag",d:"Take a lot of hits. A lot."},
+  {t:"Home Cook",d:"Cook 10 meals from scratch."},
+  {t:"???",d:"Hidden"},
+];
+
+const $ = s => document.querySelector(s);
+const stage = $("#stage"), win = $("#win");
+let history = ["menu"];
+
+function show(name){
+  document.querySelectorAll(".screen").forEach(s => s.hidden = s.dataset.screen !== name);
+  $("#crumb").textContent = name === "menu" ? "Main Menu" : cap(name);
+  $("#back").hidden = name === "menu";
+  if(name === "achievements"){ const n=$("#opt-ach .new"); if(n) n.remove(); }
+  if(name === "mail"){ const d=$("#mailbtn .dot"); if(d) d.remove(); }
+}
+function go(name){ history.push(name); show(name); }
+$("#back").addEventListener("click", () => { history.pop(); show(history[history.length-1] || "menu"); });
+document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => go(b.dataset.go)));
+$("#mailbtn").addEventListener("click", () => go("mail"));
+
+function toast(text, ms=3200){
+  const t = document.createElement("div"); t.className="toast"; t.textContent=text;
+  $("#toasts").appendChild(t); setTimeout(()=>t.remove(), ms);
+}
+function floater(text, x, y){
+  const f = document.createElement("div"); f.className="floater"; f.textContent=text;
+  f.style.left = x+"px"; f.style.top = y+"px"; stage.appendChild(f); setTimeout(()=>f.remove(), 2300);
+}
+function popup(text, onDone){
+  const p = document.createElement("div"); p.className="popup"; p.setAttribute("role","dialog");
+  p.innerHTML = `<div class="ptext"></div><div class="pactions"><button class="arrow" aria-label="Continue"><svg viewBox="0 0 28 22"><path d="M4 11h16M14 4l7 7-7 7" fill="none" stroke-width="2.4"/></svg></button></div>`;
+  p.querySelector(".ptext").textContent = text;
+  p.querySelector(".arrow").addEventListener("click", () => { p.remove(); onDone && onDone(); });
+  stage.appendChild(p); p.querySelector(".arrow").focus();
+}
+
+/* Status */
+function renderHeadings(){
+  $("#headings").innerHTML = HEADINGS.map(h => `
+    <div class="heading">
+      <span>${h.name}</span>
+      <span class="rar r-${h.tier}">${cap(h.tier)}</span>
+      <div class="track"><div class="fill" style="width:${Math.max(1,h.xp/h.bar*100)}%"></div></div>
+      <span class="num">${h.xp.toLocaleString()} / ${h.bar.toLocaleString()}</span>
+    </div>`).join("");
+}
+$("#reveal").addEventListener("submit", e => {
+  e.preventDefault();
+  const raw = $("#reveal-in").value.trim(); if(!raw) return;
+  const key = raw.toLowerCase();
+  if(HEADINGS.some(h => h.name.toLowerCase() === key)){ toast(`[${cap(raw)} is already shown]`); return; }
+  const chip = document.createElement("span"); chip.className="tag";
+  chip.innerHTML = `${raw.replace(/[<>&]/g,"")} &mdash; <span class="note">focus on it in play to find out</span>`;
+  $("#revealed").appendChild(chip);
+  $("#reveal-in").value = "";
+});
+
+/* Skills */
+function headingTier(name){
+  const h = HEADINGS.find(h => h.name === name);
+  return h ? h.tier : (HIDDEN[name.toLowerCase()] || "common");
+}
+function canUpgrade(s){ return s.up && TIERS.indexOf(headingTier(s.heading)) >= TIERS.indexOf(s.tier); }
+function renderSkills(){
+  const groups = ["Passive (toggleable)","Active"];
+  $("#skills").innerHTML = groups.map(g => {
+    const list = SKILLS.filter(s => s.group === g);
+    const byTier = TIERS.filter(t => list.some(s => s.tier === t));
+    return `<div class="sect"><h3>${g}</h3>` + byTier.map(t => `
+      <div class="rar r-${t}" style="margin:8px 0 6px">${cap(t)}</div>` +
+      list.filter(s => s.tier === t).map(s => {
+        const i = SKILLS.indexOf(s);
+        return `<div class="skill ${s.toggle && !s.on ? "off":""}">
+          <span class="name r-${s.tier}">${s.name}</span>
+          <span class="controls">
+            ${canUpgrade(s) ? `<button class="upg" data-up="${i}">Upgrade</button>`:""}
+            ${s.toggle ? `<button class="toggle" data-tog="${i}" aria-pressed="${s.on}" aria-label="Toggle ${s.name}"></button>`:""}
+          </span>
+          <span class="desc">${s.desc}</span>
+          <span class="meta">${s.type} · ${s.meta}</span>
+        </div>`;}).join("")).join("") + `</div>`;
+  }).join("");
+  document.querySelectorAll("[data-tog]").forEach(b => b.addEventListener("click", () => {
+    const s = SKILLS[b.dataset.tog]; s.on = !s.on; renderSkills();
+    toast(`[${s.name}: ${s.on ? "ON" : "OFF"}]`, 1800);
+  }));
+  document.querySelectorAll("[data-up]").forEach(b => b.addEventListener("click", () => {
+    const s = SKILLS[b.dataset.up];
+    popup(`[Upgrade: ${s.name}]
+${cap(s.tier)} → ${cap(s.up.to)}
+
+(Mockup preview only. Nothing changes.)`);
+  }));
+}
+
+/* Inventory */
+$("#items").innerHTML = ITEMS.map(it => `<div class="item" tabindex="0"><div>${it.name}</div><div class="sub">${it.sub}</div></div>`).join("");
+
+/* Friends */
+$("#friend-mg").addEventListener("click", () => { $("#ctx").hidden = !$("#ctx").hidden; });
+
+/* Achievements */
+$("#achs").innerHTML = ACHS.map(a => `
+  <div class="ach ${a.locked?"locked":""}"><div class="ico">${a.locked?"?":"★"}</div>
+  <div><div class="t">${a.t}</div><div class="d">${a.d}</div></div><div class="when">${a.w||""}</div></div>`).join("");
+$("#titles").innerHTML = TITLES.map(t => `<div class="ach locked"><div class="ico">T</div><div><div class="t">${t.t}</div><div class="d">${t.d}</div></div><div class="when">locked</div></div>`).join("");
+
+/* Mail */
+$("#mail1").addEventListener("click", () => { const b=$("#mailbody"); b.textContent = PATCH; b.hidden = !b.hidden; $("#mail1 .from").textContent = "System · read"; });
+
+/* Clock */
+function tick(){ $("#clock").textContent = new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}); }
+tick(); setInterval(tick, 15000);
+
+/* GM controls */
+$("#gm-patch").addEventListener("click", () => {
+  popup(PATCH, () => {
+    ["Tutorial Complete","Crying in the Club","Collateral Damage","Cardio Is a Status Effect","Tenderised","Chef's Kiss"]
+      .forEach((a,i) => setTimeout(() => toast(`[Achievement Unlocked: ${a}]`, 4200), i*450));
+    setTimeout(() => toast("[Skills: 4 upgrades available]", 4800), 6*450);
+  });
+});
+$("#gm-focus").addEventListener("click", () => {
+  win.classList.toggle("minimised");
+  $("#gm-focus").textContent = win.classList.contains("minimised") ? "Look at the window" : "Look away (window drifts)";
+});
+win.addEventListener("click", () => { if(win.classList.contains("minimised")){ win.classList.remove("minimised"); $("#gm-focus").textContent="Look away (window drifts)"; } });
+$("#gm-reset").addEventListener("click", () => location.reload());
+
+renderHeadings(); renderSkills(); show("menu");
+
+/* System background: tilted hex circuit grid + bokeh + PS3-style wave ribbon */
+(function(){
+  const win = document.getElementById("win");
+  const grid = document.getElementById("bg-grid"), fx = document.getElementById("bg-fx");
+  const g = grid.getContext("2d"), f = fx.getContext("2d");
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const R = 26, SQ = Math.sqrt(3);
+  let W=0,H=0,GW=0,GH=0,dpr=1,edges=[],nodes=[],pulses=[],bokeh=[],last=0;
+
+  function size(){
+    dpr = Math.min(window.devicePixelRatio||1, 2);
+    const r = win.getBoundingClientRect(); W = r.width; H = r.height;
+    GW = W*1.6; GH = H*1.4;
+    for (const [c,w,h] of [[grid,GW,GH],[fx,W,H]]){ c.width=w*dpr; c.height=h*dpr; c.style.width=w+"px"; c.style.height=h+"px"; }
+    g.setTransform(dpr,0,0,dpr,0,0); f.setTransform(dpr,0,0,dpr,0,0);
+    build();
+  }
+  function build(){
+    const seen = new Map(), verts = new Map(); edges=[]; nodes=[];
+    const key = (x,y) => Math.round(x)+","+Math.round(y);
+    for (let q=-1; q*1.5*R < GW+R*2; q++){
+      for (let row=-1; row*SQ*R < GH+R*2; row++){
+        const cx = q*1.5*R, cy = (row + (q&1)*0.5)*SQ*R;
+        const pts = [];
+        for (let i=0;i<6;i++){ const a=Math.PI/3*i; pts.push([cx+R*Math.cos(a), cy+R*Math.sin(a)]); }
+        for (let i=0;i<6;i++){
+          const a=pts[i], b=pts[(i+1)%6], k=[key(...a),key(...b)].sort().join("|");
+          if (!seen.has(k)){ seen.set(k,1); edges.push([a,b]); }
+          verts.set(key(...a), a);
+        }
+      }
+    }
+    for (const v of verts.values()) if (Math.random() < 0.07) nodes.push({x:v[0],y:v[1],p:Math.random()*6.28,s:0.6+Math.random()*1.4});
+    bokeh = Array.from({length: Math.round(W*H/26000)+8}, () => ({
+      x:Math.random()*W, y:Math.random()*H, r:6+Math.random()*26, a:0.04+Math.random()*0.1,
+      vx:(Math.random()-.5)*6, vy:(Math.random()-.5)*4 }));
+  }
+  function drawGrid(t){
+    g.clearRect(0,0,GW,GH);
+    g.lineWidth = 1; g.strokeStyle = "rgba(63,184,255,0.10)";
+    g.beginPath(); for (const [a,b] of edges){ g.moveTo(a[0],a[1]); g.lineTo(b[0],b[1]); } g.stroke();
+    // lit traces
+    if (!still && Math.random() < 0.18) pulses.push({e:edges[(Math.random()*edges.length)|0], t0:t, d:900+Math.random()*1400});
+    pulses = pulses.filter(p => t - p.t0 < p.d);
+    g.lineWidth = 1.6; g.shadowColor = "rgba(90,200,255,0.9)"; g.shadowBlur = 8;
+    for (const p of pulses){
+      const k = (t-p.t0)/p.d, a = Math.sin(k*Math.PI);
+      g.strokeStyle = `rgba(120,215,255,${0.55*a})`;
+      g.beginPath(); g.moveTo(p.e[0][0],p.e[0][1]); g.lineTo(p.e[1][0],p.e[1][1]); g.stroke();
+    }
+    // nodes
+    for (const n of nodes){
+      const a = 0.35 + 0.65*Math.max(0, Math.sin(t/900*n.s + n.p));
+      g.fillStyle = `rgba(170,230,255,${0.7*a})`; g.shadowBlur = 10*a;
+      g.beginPath(); g.arc(n.x,n.y,1.6,0,6.283); g.fill();
+    }
+    g.shadowBlur = 0;
+  }
+  function drawFx(t, dt){
+    f.clearRect(0,0,W,H);
+    f.globalCompositeOperation = "lighter";
+    // PS3-style ribbon: a bundle of translucent curves
+    const bands = [
+      {y:0.58, amp:0.07, k:1.6, sp:0.00016, n:14, hue:"110,190,255"},
+      {y:0.64, amp:0.05, k:2.3, sp:-0.00011, n:10, hue:"80,150,255"},
+    ];
+    for (const b of bands){
+      for (let i=0;i<b.n;i++){
+        f.strokeStyle = `rgba(${b.hue},${0.035 + (i===Math.floor(b.n/2)?0.05:0)})`;
+        f.lineWidth = 1;
+        f.beginPath();
+        for (let x=0; x<=W; x+=12){
+          const u = x/W;
+          const y = H*(b.y + b.amp*Math.sin(u*b.k*6.283 + t*b.sp*6.283 + i*0.12) + 0.025*Math.sin(u*9 + t*0.0004 + i*0.3));
+          x ? f.lineTo(x,y) : f.moveTo(x,y);
+        }
+        f.stroke();
+      }
+    }
+    // bokeh
+    for (const o of bokeh){
+      if (!still){ o.x += o.vx*dt; o.y += o.vy*dt;
+        if (o.x<-40) o.x=W+40; if (o.x>W+40) o.x=-40; if (o.y<-40) o.y=H+40; if (o.y>H+40) o.y=-40; }
+      const gr = f.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);
+      gr.addColorStop(0, `rgba(120,200,255,${o.a})`); gr.addColorStop(0.7, `rgba(70,150,255,${o.a*0.45})`); gr.addColorStop(1,"rgba(40,100,255,0)");
+      f.fillStyle = gr; f.beginPath(); f.arc(o.x,o.y,o.r,0,6.283); f.fill();
+    }
+    f.globalCompositeOperation = "source-over";
+  }
+  function frame(t){
+    const dt = last ? Math.min((t-last)/1000, 0.1) : 0; last = t;
+    drawGrid(t); drawFx(t, dt);
+    if (!still) requestAnimationFrame(frame);
+  }
+  new ResizeObserver(() => { size(); if (still) frame(0); }).observe(win);
+  size(); requestAnimationFrame(frame);
+})();
+
+
+const glossEl = document.getElementById("gloss");
+document.getElementById("gm-gloss").addEventListener("click", () => { glossEl.hidden = false; document.getElementById("gloss-close").focus(); });
+document.getElementById("gloss-close").addEventListener("click", () => { glossEl.hidden = true; document.getElementById("gm-gloss").focus(); });
+glossEl.addEventListener("click", e => { if (e.target === glossEl) glossEl.hidden = true; });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !glossEl.hidden) glossEl.hidden = true; });
+</script>
+
+</body>
+</html>
