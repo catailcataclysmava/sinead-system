@@ -290,6 +290,11 @@ h3{font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform
 }
 
 .gm button:disabled{opacity:.35;cursor:not-allowed}
+
+.sxp{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-top:2px}
+.sxp .track{flex:1;height:4px;background:rgba(255,255,255,.06)}
+.sxp .fill{height:100%;background:var(--xpbar)}
+.sxp .num{font-size:11px;color:var(--muted);white-space:nowrap}
 </style>
 </head>
 <body>
@@ -573,7 +578,7 @@ const SKILLS = [
   {group:"Passive (toggleable)",name:"Stamina",tier:"uncommon",type:"Passive",heading:"Stamina",
    desc:"You now have a stamina bar. It recovers over time. Any action that would reasonably exhaust you consumes stamina before affecting your body.",
    meta:"Second Wind: once per day, recover 30% when Stamina hits 0."},
-  {group:"Passive (toggleable)",name:"Unrealistic Dodge",tier:"uncommon",type:"Passive",heading:"Dodging",
+  {group:"Passive (toggleable)",fixed:true,name:"Unrealistic Dodge",tier:"uncommon",type:"Passive",heading:"Dodging",
    desc:"By timing a dodge perfectly before it hits you, you can dodge even unavoidable attacks by phasing through the attack entirely.",
    meta:"Cost: 15 Stamina · Perfect Dodge refunds 5 · Fixed: cannot be upgraded."},
   {group:"Active",name:"Identify",tier:"uncommon",type:"Active",heading:"Sight",
@@ -662,7 +667,9 @@ function headingTier(name){
   const h = HEADINGS.find(h => h.name === name);
   return h ? h.tier : (HIDDEN[name.toLowerCase()] || "common");
 }
-function canUpgrade(s){ return s.up && TIERS.indexOf(headingTier(s.heading)) >= TIERS.indexOf(s.tier); }
+const SKILL_BARS = {common:500, uncommon:1700, rare:5000, epic:17000, legendary:50000};
+function skillBar(s){ return SKILL_BARS[s.tier]; }
+function canUpgrade(s){ return !s.fixed && s.up && (s.xp||0) >= skillBar(s); }
 function renderSkills(){
   const groups = ["Passive (toggleable)","Active"];
   $("#skills").innerHTML = groups.map(g => {
@@ -680,6 +687,7 @@ function renderSkills(){
           </span>
           <span class="desc">${s.desc}</span>
           <span class="meta">${s.type} · ${s.meta}</span>
+          ${s.fixed ? "" : `<div class="sxp"><div class="track"><div class="fill" style="width:${Math.min(100,(s.xp||0)/skillBar(s)*100)}%"></div></div><span class="num">${(s.xp||0).toLocaleString()} / ${skillBar(s).toLocaleString()} XP</span></div>`}
         </div>`;}).join("")).join("") + `</div>`;
   }).join("");
   document.querySelectorAll("[data-tog]").forEach(b => b.addEventListener("click", () => {
