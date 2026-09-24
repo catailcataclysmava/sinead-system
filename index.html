@@ -722,7 +722,7 @@ $("#titles").innerHTML = TITLES.map(t => `<div class="ach locked"><div class="ic
 
 /* Mail */
 $("#mail1").addEventListener("click", () => { const b=$("#mailbody"); b.textContent = PATCH; b.hidden = !b.hidden; $("#mail1 .from").textContent = "System · read"; });
-const HOTFIX = "[System Update v1.01a: Hotfix]\n• Skills now display their own XP bars. Using a skill fills its bar.\n• [Upgrade] becomes available when a skill"s bar is full.";
+const HOTFIX = "[System Update v1.01a: Hotfix]\n• Skills now display their own XP bars. Using a skill fills its bar.\n• [Upgrade] becomes available when a skill’s bar is full.";
 $("#mail2").addEventListener("click", () => { const b=$("#mailbody2"); b.textContent = HOTFIX; b.hidden = !b.hidden; $("#mail2 .from").textContent = "System · read"; });
 
 /* Clock */
