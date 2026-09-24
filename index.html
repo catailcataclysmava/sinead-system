@@ -478,7 +478,12 @@ h3{font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform
 
           <!-- MAIL -->
           <div class="screen" data-screen="mail" hidden>
-            <div class="mail" id="mail1" tabindex="0">
+            <div class="mail" id="mail2" tabindex="0">
+              <div class="from">System &middot; unread</div>
+              <div style="font-family:var(--display);font-weight:600">[System Update v1.01a: Hotfix]</div>
+            </div>
+            <div class="mail-body" id="mailbody2" hidden></div>
+            <div class="mail" id="mail1" tabindex="0" style="margin-top:8px">
               <div class="from">System &middot; unread</div>
               <div style="font-family:var(--display);font-weight:600">[System Update v1.01: Patch Notes]</div>
             </div>
@@ -717,6 +722,8 @@ $("#titles").innerHTML = TITLES.map(t => `<div class="ach locked"><div class="ic
 
 /* Mail */
 $("#mail1").addEventListener("click", () => { const b=$("#mailbody"); b.textContent = PATCH; b.hidden = !b.hidden; $("#mail1 .from").textContent = "System · read"; });
+const HOTFIX = "[System Update v1.01a: Hotfix]\n• Skills now display their own XP bars. Using a skill fills its bar.\n• [Upgrade] becomes available when a skill"s bar is full.";
+$("#mail2").addEventListener("click", () => { const b=$("#mailbody2"); b.textContent = HOTFIX; b.hidden = !b.hidden; $("#mail2 .from").textContent = "System · read"; });
 
 /* Clock */
 function tick(){ $("#clock").textContent = new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}); }
