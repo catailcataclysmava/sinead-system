@@ -384,7 +384,7 @@ h3{font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform
               <div class="bar"><label><span>HP</span><span class="num">100 / 100</span></label><div class="track"><div class="fill" style="width:100%;background:var(--hp)"></div></div></div>
               <div class="bar"><label><span>MP</span><span class="num">100 / 100</span></label><div class="track"><div class="fill" style="width:100%;background:var(--mp)"></div></div></div>
               <div class="bar"><label><span>Stamina</span><span class="num">100 / 100</span></label><div class="track"><div class="fill" style="width:100%;background:var(--st)"></div></div></div>
-              <div class="bar"><label><span>LV 3 &middot; XP</span><span class="num" id="lvxp">46 / 1,000</span></label><div class="track"><div class="fill" id="lvfill" style="width:4.6%;background:var(--xpbar)"></div></div></div>
+              <div class="bar"><label><span>LV 3 &middot; XP</span><span class="num" id="lvxp">71 / 1,000</span></label><div class="track"><div class="fill" id="lvfill" style="width:7.1%;background:var(--xpbar)"></div></div></div>
             </div>
             <div class="status-grid">
               <div class="figure" aria-label="Body figure">
@@ -429,7 +429,7 @@ h3{font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform
 
           <!-- INVENTORY -->
           <div class="screen" data-screen="inventory" hidden>
-            <div class="cap"><span>Slots <span class="num">3 / 20</span></span><span>Weight: well within limit</span><span>Set: [everyday wear] &middot; no set bonus</span></div>
+            <div class="cap"><span>Slots <span class="num">2 / 20</span></span><span>Weight: well within limit</span><span>Set: [everyday wear] &middot; no set bonus</span></div>
             <div class="inv-grid">
               <div>
                 <div class="figure">
@@ -451,7 +451,7 @@ h3{font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform
               <div>
                 <h3>Items</h3>
                 <div id="items"></div>
-                <div class="note">Example contents. Stored items are frozen in time.</div>
+                <div class="note">As of Day 2, evening. Stored items are frozen in time.</div>
               </div>
             </div>
           </div>
@@ -559,7 +559,7 @@ const TIERS = ["poor","common","uncommon","rare","epic","legendary","mythic"];
 const cap = s => s[0].toUpperCase()+s.slice(1);
 
 const HEADINGS = [
-  {name:"Cooking",tier:"uncommon",xp:75,bar:5000},
+  {name:"Cooking",tier:"uncommon",xp:100,bar:5000},
   {name:"Repair",tier:"common",xp:40,bar:1500},
   {name:"Dodging",tier:"common",xp:45,bar:1500},
   {name:"Impact Resistance",tier:"common",xp:13,bar:1500},
@@ -569,7 +569,7 @@ const HEADINGS = [
 const HIDDEN = {sight:"common"};
 
 const SKILLS = [
-  {group:"Passive (toggleable)",name:"Cooking",tier:"uncommon",type:"Toggle",toggle:true,on:false,heading:"Cooking",
+  {group:"Passive (toggleable)",name:"Cooking",tier:"uncommon",type:"Toggle",toggle:true,on:true,xp:25,heading:"Cooking",
    desc:"When using this skill, preparing a meal takes half as long and only uses half the ingredients. Meals you cook grant [Home Cooked]: stamina regenerates 50% faster for 8 hours, and finishing the meal clears Exhausted and Shaken. The skill must be ON to benefit from it.",
    meta:"While ON, Cooking XP is reduced."},
   {group:"Passive (toggleable)",name:"Fitness",tier:"common",type:"Toggle",toggle:true,on:true,heading:"Stamina",
@@ -594,8 +594,7 @@ const SKILLS = [
 
 const ITEMS = [
   {name:"[Phone]",sub:"A smartphone. Still on its first week."},
-  {name:"[Mug (Empty)]",sub:"A mug from Julia's kitchen. Previously contained coffee."},
-  {name:"[Takeout Receipt]",sub:"Peppered chicken fillet, beef lo mein."},
+  {name:"[Takeout (Half-eaten)]",sub:"Peppered chicken fillet, with chopsticks. Frozen in time mid-meal."},
 ];
 
 const ACHS = [
