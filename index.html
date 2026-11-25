@@ -335,7 +335,7 @@ h3{font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform
     </div>
   </section>
   <div class="stage" id="stage">
-    <div class="stage-label">Sinead's view · Julia's apartment · Day 2, evening</div>
+    <div class="stage-label">Sinead's view · PATH building · Day 3, morning</div>
 
     <section class="win" id="win" aria-label="System window">
       <div class="lights" aria-hidden="true"><canvas id="bg-grid"></canvas><canvas id="bg-fx"></canvas></div>
@@ -384,7 +384,7 @@ h3{font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform
               <div class="bar"><label><span>HP</span><span class="num">100 / 100</span></label><div class="track"><div class="fill" style="width:100%;background:var(--hp)"></div></div></div>
               <div class="bar"><label><span>MP</span><span class="num">100 / 100</span></label><div class="track"><div class="fill" style="width:100%;background:var(--mp)"></div></div></div>
               <div class="bar"><label><span>Stamina</span><span class="num">100 / 100</span></label><div class="track"><div class="fill" style="width:100%;background:var(--st)"></div></div></div>
-              <div class="bar"><label><span>LV 3 &middot; XP</span><span class="num" id="lvxp">71 / 1,000</span></label><div class="track"><div class="fill" id="lvfill" style="width:7.1%;background:var(--xpbar)"></div></div></div>
+              <div class="bar"><label><span>LV 3 &middot; XP</span><span class="num" id="lvxp">351 / 1,000</span></label><div class="track"><div class="fill" id="lvfill" style="width:35.1%;background:var(--xpbar)"></div></div></div>
             </div>
             <div class="status-grid">
               <div class="figure" aria-label="Body figure">
@@ -398,6 +398,7 @@ h3{font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform
                   <h3>Status effects</h3>
                   <div class="effects">
                     <div class="effect" tabindex="0">[Fully rested: Granted by Julia's couch]<span class="tip">[well rested: small bonus to XP gain]</span></div>
+                    <div class="effect" tabindex="0">[Home Cooked: Granted by your cooking]<span class="tip">[Home Cooked: stamina recovers faster]</span></div>
                   </div>
                 </div>
                 <div class="sect">
@@ -451,7 +452,7 @@ h3{font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform
               <div>
                 <h3>Items</h3>
                 <div id="items"></div>
-                <div class="note">As of Day 2, evening. Stored items are frozen in time.</div>
+                <div class="note">As of Day 3, morning. Stored items are frozen in time.</div>
               </div>
             </div>
           </div>
@@ -468,7 +469,7 @@ h3{font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform
 
           <!-- ACHIEVEMENTS -->
           <div class="screen" data-screen="achievements" hidden>
-            <div class="ach-head"><h3>Achievements</h3><span class="num note">7 / ??</span></div>
+            <div class="ach-head"><h3>Achievements</h3><span class="num note">8 / ??</span></div>
             <div id="achs"></div>
             <div class="sect" style="margin-top:20px">
               <h3>Titles &middot; slot 1: empty</h3>
@@ -559,17 +560,18 @@ const TIERS = ["poor","common","uncommon","rare","epic","legendary","mythic"];
 const cap = s => s[0].toUpperCase()+s.slice(1);
 
 const HEADINGS = [
-  {name:"Cooking",tier:"uncommon",xp:100,bar:5000},
+  {name:"Cooking",tier:"uncommon",xp:125,bar:5000},
   {name:"Repair",tier:"common",xp:40,bar:1500},
   {name:"Dodging",tier:"common",xp:45,bar:1500},
   {name:"Impact Resistance",tier:"common",xp:13,bar:1500},
-  {name:"Sight",tier:"common",xp:0,bar:1500},
+  {name:"Sight",tier:"common",xp:235,bar:1500},
+  {name:"Dexterity",tier:"poor",xp:20,bar:400},
   {name:"Stamina",tier:"poor",xp:180,bar:400},
 ];
 const HIDDEN = {sight:"common"};
 
 const SKILLS = [
-  {group:"Passive (toggleable)",name:"Cooking",tier:"uncommon",type:"Toggle",toggle:true,on:true,xp:25,heading:"Cooking",
+  {group:"Passive (toggleable)",name:"Cooking",tier:"uncommon",type:"Toggle",toggle:true,on:true,xp:50,heading:"Cooking",
    desc:"When using this skill, preparing a meal takes half as long and only uses half the ingredients. Meals you cook grant [Home Cooked] to anyone who eats them: stamina regenerates 50% faster for 8 hours, and finishing the meal clears Exhausted and Shaken. The skill must be ON to benefit from it.",
    meta:"While ON, Cooking XP is reduced."},
   {group:"Passive (toggleable)",name:"Fitness",tier:"common",type:"Toggle",toggle:true,on:true,heading:"Stamina",
@@ -586,7 +588,7 @@ const SKILLS = [
   {group:"Passive (toggleable)",fixed:true,name:"Unrealistic Dodge",tier:"uncommon",type:"Passive",heading:"Dodging",
    desc:"By timing a dodge perfectly before it hits you, you can dodge even unavoidable attacks by phasing through the attack entirely.",
    meta:"Cost: 15 Stamina · Perfect Dodge refunds 5 · Fixed: cannot be upgraded."},
-  {group:"Active",name:"Identify",tier:"uncommon",type:"Active",heading:"Sight",
+  {group:"Active",name:"Identify",tier:"uncommon",type:"Active",xp:235,heading:"Sight",
    desc:"Learn some info about a target. Objects also describe what they are for and how they are used. People show HP, MP and Stamina bars.",meta:"Cast: 1 second of focus."},
   {group:"Active",name:"Quicken",tier:"common",type:"Active",heading:"Stamina",
    desc:"The next single action you take after activating this skill completes in half the time! 1 hr cool down.",meta:"Cost: 10 Stamina."},
@@ -594,8 +596,8 @@ const SKILLS = [
 
 const ITEMS = [
   {name:"[Phone]",sub:"A smartphone. Still on its first week."},
-  {name:"[Takeout (Half-eaten)]",sub:"Peppered chicken fillet, with chopsticks. Frozen in time mid-meal."},
-  {name:"[Ham and Cheese Omelette]",sub:"Unseasoned. Saved for tomorrow morning. Grants Home Cooked when eaten."},
+  {name:"[Ham and Cheese Omelette]",sub:"Unseasoned. Grants Home Cooked when eaten."},
+  {name:"[Bacon and Egg Toasted Sandwiches]",sub:"The spares from breakfast. Two already given away. Grant Home Cooked when eaten."},
 ];
 
 const ACHS = [
@@ -606,6 +608,7 @@ const ACHS = [
   {t:"Tenderised",d:"Get knocked down 50 times in one session.",w:"Day 2"},
   {t:"Chef's Kiss",d:"Unlock your first crafting skill.",w:"Day 1"},
   {t:"Big Mouth",d:"Blab about the big secret before a week has passed.",w:"Day 2"},
+  {t:"Genre Awareness",d:"Make the right choice in a perilous situation.",w:"Day 3"},
   {t:"???",d:"Some doors are better left closed.",locked:true},
   {t:"???",d:"Hidden",locked:true},
 ];
@@ -931,6 +934,8 @@ const DOSSIERS = [
   {"id": "wayfinder", "file": "PG-LAN-H-0083", "cape": "Wayfinder", "civ": "Dev [R]", "kind": "hero", "badges": [["active", "Active"]], "cls": ["Thinker 4"], "fields": [["Affiliation", "PARAGON (Dispatch liaison)"], ["Hero class", "Class-C"], ["Medical", "[R]"]], "summary": "Always knows the fastest current route to any place, or to any person he has met. The route updates in real time as traffic and obstacles change.", "desc": "Twenties; lanky; courier jacket covered in transit-line pins.", "incidents": ["Guided emergency services through the city during the undead outbreak, when the transit network shut down."], "associates": ["Works closely with Dispatch on routing and cape transport.", "Knows most Dispatch staff by name."], "assessment": "Low combat value, very high logistical value. Popular with Dispatch. Terrible at staying put.", "notes": ["Triggered lost in a whiteout on a hiking trip."]},
   {"id": "kintsugi", "file": "PG-LAN-H-0090", "cape": "Kintsugi", "civ": "[R]", "kind": "hero", "badges": [["active", "Active"]], "cls": ["Breaker 5", "Brute 3"], "fields": [["Affiliation", "PARAGON"], ["Hero class", "Class-B"], ["Medical", "[R]"]], "summary": "When injured, the damaged area turns to a hard, porcelain-like material seamed with gold, which is stronger than what it replaced. The more she is hurt, the tougher she becomes. The changes fade over several days.", "desc": "Slight build. Visible gold seams across her hands and jaw from recent injuries.", "incidents": ["Held a collapsing overpass support in place until the evacuation was complete; most of her right side was gold-seamed for a week."], "associates": ["Mentors junior Brutes at PATH."], "assessment": "Calm, patient and extremely hard to stop. Do not mistake her willingness to be hurt for immunity to it.", "notes": []},
   {"id": "understudy", "file": "PG-LAN-H-0112", "cape": "Understudy", "civ": "[R]", "kind": "hero", "badges": [["active", "Active"]], "cls": ["Changer 3", "Stranger 3"], "fields": [["Affiliation", "PARAGON (undercover)"], ["Hero class", "Class-C"], ["Medical", "[R]"]], "summary": "After watching someone for about an hour, can imitate their voice, mannerisms and appearance closely enough to pass casual inspection. Only one imitation at a time.", "desc": "[R]", "incidents": ["[R]"], "associates": ["[R]"], "assessment": "Excellent undercover asset. Tends to stay in character longer than necessary; schedule debriefs.", "notes": ["Triggered after years of being overlooked for promotion. Details restricted."]},
+  {"id": "rune", "file": "PG-LAN-H-0097", "cape": "Rune", "civ": "[R]", "kind": "hero", "badges": [["active", "Active"]], "cls": ["Shaker 4"], "fields": [["Affiliation", "PARAGON"], ["Workspace", "PATH, room B4-72"], ["Medical", "[R]"]], "summary": "Draws symbols that produce magical effects. Each symbol has its own effect, and the more complex the effect, the longer the symbol takes to draw. Considered the most structured explicit magic user currently on site.", "associates": ["Suggested by Dr. Iwata as a possible teacher for S. Powers (magic and enchanting)."], "assessment": "Methodical; her power rewards preparation over improvisation. Brief her before deployment so symbols can be prepared in advance.", "notes": []},
+  {"id": "whitegloves", "file": "PG-LAN-H-0103", "cape": "White Gloves", "civ": "[R]", "kind": "hero", "badges": [["active", "Active"]], "cls": ["Stranger 3"], "fields": [["Affiliation", "PARAGON"], ["Medical", "[R]"]], "summary": "Performs stage magic that genuinely works: objects vanish, appear and swap places within the limits of a classic trick. Requires a performance: misdirection, a flourish, an audience.", "assessment": "Excellent at misdirection and public relations. Limited outside of trick-shaped problems.", "notes": ["Ruled out by Dr. Iwata as a teacher for S. Powers' magic: \"'real' stage magic.\""]},
   {"id": "paperwork", "file": "PG-LAN-V-0052", "cape": "Paperwork", "civ": "[R]", "kind": "villain", "badges": [["villain", "At large"]], "cls": ["Master 4", "Stranger 3"], "fields": [["Threat", "White-collar; fraud and forgery"]], "summary": "Documents the subject writes are believed by anyone who reads them in good faith, however implausible. The effect wears off within a few days, usually after the damage is done.", "mo": "Forged authorisations, invoices and orders, used to walk into secure buildings or drain accounts.", "incidents": ["Obtained a PARAGON vehicle using a requisition form signed by \"The Director\" (unnamed). The vehicle was later recovered."], "engagement": "Verify written orders by phone or in person. Do not read documents he hands you.", "locations": "Unknown. Believed to hold office jobs under false identities.", "assessment": "Polite, careful and entirely non-violent. Frustrating rather than dangerous.", "notes": ["Former auditor."]},
   {"id": "motherhen", "file": "PG-LAN-V-0036", "cape": "Mother Hen", "civ": "[R]", "kind": "villain", "badges": [["villain", "At large"]], "cls": ["Master 5"], "fields": [["Threat", "Smuggling; organised crime"]], "summary": "Controls birds within a wide radius: pigeons, gulls, crows. Uses them as couriers, lookouts and, when cornered, as a swarm.", "mo": "Runs a smuggling network that moves small goods across the city by air. Very hard to intercept.", "incidents": ["Swarm incident at the Harbour Market: dozens of minor injuries, no arrests."], "engagement": "Assume you are being watched from above. Avoid open ground if the subject is agitated.", "locations": "Believed to operate near the docks and rooftops of the old town.", "assessment": "Protective of her people and her birds. Will negotiate if approached respectfully.", "notes": []},
   {"id": "spoilsport", "file": "PG-LAN-V-0061", "cape": "Spoilsport", "civ": "[R]", "kind": "villain", "badges": [["villain", "At large"]], "cls": ["Trump 4"], "fields": [["Threat", "Public disruption"]], "summary": "Suppresses the powers of anyone nearby who is enjoying themselves. Capes who stay calm or miserable are unaffected.", "mo": "Targets festivals, parades, sporting events and cape publicity appearances.", "incidents": ["Shut down the Lanchester Summer Parade's cape float mid-route."], "engagement": "Send capes who can stay focused and unamused. Do not send Metalhead or The Manhattan Wall.", "locations": "Public events.", "assessment": "Petty and bitter rather than dangerous, but very effective against showboating capes.", "notes": []},
